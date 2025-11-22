@@ -1,5 +1,5 @@
+learning_twin.db
+user_logs.csv
 venv/
 __pycache__/
-*.pyc
-user_logs.csv
 .DS_Store

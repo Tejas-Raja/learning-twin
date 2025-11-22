@@ -5,10 +5,11 @@ import pandas as pd
 import random
 import os
 from datetime import datetime
+import sqlite3
 
 st.set_page_config(page_title="Student Learning Twin", page_icon="🧠")
 
-LOG_PATH = "user_logs.csv"
+DB_PATH = "learning_twin.db"
 
 # =============== LOAD QUESTIONS =================
 @st.cache_data
@@ -78,41 +79,88 @@ def pick_question():
 def start_question():
     st.session_state.start_time = time.time()
 
+def init_db():
+    """Create SQLite DB and user_logs table if they don't exist."""
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS user_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user TEXT NOT NULL,
+            question_id INTEGER NOT NULL,
+            topic TEXT,
+            chapter TEXT,
+            difficulty TEXT,
+            correct_numeric INTEGER,
+            time_taken REAL,
+            timestamp TEXT
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
 def load_all_logs():
-    if os.path.exists(LOG_PATH):
-        df = pd.read_csv(LOG_PATH)
+    """Load all logs from SQLite as a pandas DataFrame."""
+    conn = sqlite3.connect(DB_PATH)
+    df = pd.read_sql_query(
+        """
+        SELECT
+            user,
+            question_id,
+            topic,
+            chapter,
+            difficulty,
+            correct_numeric,
+            time_taken,
+            timestamp
+        FROM user_logs
+        """,
+        conn,
+    )
+    conn.close()
 
-        # Case 1: already have correct_numeric -> make sure it's numeric
-        if "correct_numeric" in df.columns:
-            df["correct_numeric"] = pd.to_numeric(df["correct_numeric"], errors="coerce").fillna(0).astype(int)
+    # Ensure correct_numeric exists and is numeric
+    if "correct_numeric" not in df.columns:
+        df["correct_numeric"] = 0
 
-        # Case 2: old format with 'correct' as True/False or 'True'/'False'
-        elif "correct" in df.columns:
-            def to_num(x):
-                s = str(x).strip().lower()
-                if s in ["true", "1", "yes"]:
-                    return 1
-                if s in ["false", "0", "no"]:
-                    return 0
-                return 0  # default if weird value
-            df["correct_numeric"] = df["correct"].map(to_num).astype(int)
+    df["correct_numeric"] = (
+        df["correct_numeric"]
+        .astype(str)
+        .str.lower()
+        .map({"1": 1, "0": 0, "true": 1, "false": 0})
+        .fillna(0)
+        .astype(int)
+    )
 
-        # Case 3: nothing there, just create the column
-        else:
-            df["correct_numeric"] = 0
-
-        return df
-    else:
-        cols = ["user", "question_id", "topic", "chapter", "difficulty",
-                "correct_numeric", "time_taken", "timestamp"]
-        return pd.DataFrame(columns=cols)
+    return df
 
 def append_log_row(row_dict):
-    new_row_df = pd.DataFrame([row_dict])
-    if os.path.exists(LOG_PATH):
-        new_row_df.to_csv(LOG_PATH, mode="a", header=False, index=False)
-    else:
-        new_row_df.to_csv(LOG_PATH, index=False)
+    """Insert a single log entry into SQLite."""
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO user_logs
+        (user, question_id, topic, chapter, difficulty, correct_numeric, time_taken, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            row_dict["user"],
+            row_dict["question_id"],
+            row_dict["topic"],
+            row_dict["chapter"],
+            row_dict["difficulty"],
+            row_dict["correct_numeric"],
+            row_dict["time_taken"],
+            row_dict["timestamp"],
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+init_db()
 
 # =============== UI: USER ID =================
 st.title("🧠 Student Learning Twin")
@@ -154,7 +202,9 @@ else:
         end_time = time.time()
         time_taken = round(end_time - st.session_state.start_time, 2)
 
-        is_correct = (q["options"].index(choice) == q["answer"])
+        # safer correctness check: compare to the actual correct option text
+        correct_option = q["options"][int(q["answer"])]  # int() handles "1" or 1
+        is_correct = (choice == correct_option)
 
         # log in SESSION (keep correct as bool here)
         session_log_entry = {

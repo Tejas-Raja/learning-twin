@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "question": "What is the time complexity of Binary Search?",
+    "options": [
+      "O(n)",
+      "O(log n)",
+      "O(n log n)",
+      "O(1)"
+    ],
+    "answer": 1,
+    "topic": "DSA",
+    "chapter": "Searching",
+    "difficulty": "easy"
+  },
+  {
+    "id": 2,
+    "question": "Which data structure uses FIFO?",
+    "options": [
+      "Stack",
+      "Queue",
+      "Tree",
+      "Graph"
+    ],
+    "answer": 1,
+    "topic": "DSA",
+    "chapter": "Queue",
+    "difficulty": "easy"
+  },
+  {
+    "id": 3,
+    "question": "Which traversal method uses Left-Root-Right?",
+    "options": [
+      "Preorder",
+      "Inorder",
+      "Postorder",
+      "Level-order"
+    ],
+    "answer": 1,
+    "topic": "DSA",
+    "chapter": "Trees",
+    "difficulty": "medium"
+  },
+  {
+    "id": 4,
+    "question": "Worst-case time complexity of Quick Sort is?",
+    "options": [
+      "O(n log n)",
+      "O(log n)",
+      "O(n^2)",
+      "O(n)"
+    ],
+    "answer": 2,
+    "topic": "DSA",
+    "chapter": "Sorting",
+    "difficulty": "medium"
+  },
+  {
+    "id": 5,
+    "question": "Dijkstra’s Algorithm is used for?",
+    "options": [
+      "Minimum Spanning Tree",
+      "Shortest Path",
+      "Maximum Flow",
+      "Topological Sort"
+    ],
+    "answer": 1,
+    "topic": "DSA",
+    "chapter": "Graphs",
+    "difficulty": "hard"
+  }
+]
